@@ -39,7 +39,7 @@ Note:
 	Management IP for Jenkins VM should be accessible via SSH.
 	
 Trigger the Setup process
-
+### 1.automatic deployment from jenkins
 To start the site build, after setting up of Jenkins slave and master setup. 
 -	Login to the Jenkins dashboard:  https://jenkins.mtn5.cci.att.com/view/FULL-CD/
 -	Select “Full-CD” in the tabs and click on “FullCD-Depolylab-Pipeline” (https://jenkins.mtn5.cci.att.com/view/FULL-CD/job/FULLCD-Deploylab-Pipeline/) 
@@ -65,8 +65,27 @@ To start the site build, after setting up of Jenkins slave and master setup.
 | FULLCD - Deploy-Compute-KVMs | Computes with different profiles
 | FULLCD - Deploy-Non-Openstack | RO, DCAE, ASTRA, UWA, Nagios (excluding ATT-Tools/MUAM)
 | FULLCD - Deployment Validation | Tempest testing
-| Dashboard |  Basic Jenkins GUI & log collection in place |
+| Dashboard |  Basic Jenkins GUI and log collection in place |
 | LCM Integration |
+### 2 manual deployment steps
+we can even perform manual deployment task wise.
+
+### 2.1 Update Apollo
+
+#### task  1 Update apollo code
+sudo apt-get update aic-opssimple-apollo && apt-get upgrade aic-opssimple-apollo
+#### task 2 Update the configuration files from Jenkins
+move all the following yamls files from jenkins vm to seed node
+           - bootstrap_fuelastute.yaml
+           - bootstrap_fuelplugins.yaml
+           - bootstrap_maasvm.yaml
+           - bootstrap_opscvm.yaml
+           - bootstrap_seed.yaml
+#### task 3 Rename the bootstrap_seed.yaml to site.yaml
+on seed node run following command
+mv /home/ubuntu/apollo/bootstrap_seed.yaml /home/ubuntu/apollo/site.yaml
+
+
 
 ###Note:
 If Pipeline job fails, DE will need to re-run the FAILED Job after fixing the configuration if necessary and then continue executing individual downstream jobs only.
