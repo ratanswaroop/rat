@@ -67,24 +67,32 @@ To start the site build, after setting up of Jenkins slave and master setup.
 | FULLCD - Deployment Validation | Tempest testing
 | Dashboard |  Basic Jenkins GUI and log collection in place |
 | LCM Integration |
-### 2 manual deployment steps
+### 2.manual deployment steps
 we can even perform manual deployment task wise.
 
 ### 2.1 Update Apollo
+Clone both aic-opssimple-sites and aic-opssimple-fullcd repos on jenkins vm
+git clone -b $GERRIT_BRANCH ssh://jenkins@gerrit.mtn5.cci.att.com:29418/aic-opssimple-sites
+git clone -b $GERRIT_BRANCH ssh://jenkins@gerrit.mtn5.cci.att.com:29418/aic-opssimple-fullcd
 
-#### task  1 Update apollo code
+run the below playbook from jenkins VM
+ansible-playbook -i inventory playbooks/seedkvm_updateapollo.yml --extra-vars="site_folder=$ENV_NAME" 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+#### task 1: Update apollo code
 sudo apt-get update aic-opssimple-apollo && apt-get upgrade aic-opssimple-apollo
-#### task 2 Update the configuration files from Jenkins
+#### task 2: Update the configuration files from Jenkins
 move all the following yamls files from jenkins vm to seed node
+~~~
            - bootstrap_fuelastute.yaml
            - bootstrap_fuelplugins.yaml
            - bootstrap_maasvm.yaml
            - bootstrap_opscvm.yaml
            - bootstrap_seed.yaml
-#### task 3 Rename the bootstrap_seed.yaml to site.yaml
+~~~
+#### task 3: Rename the bootstrap_seed.yaml to site.yaml
 on seed node run following command
 mv /home/ubuntu/apollo/bootstrap_seed.yaml /home/ubuntu/apollo/site.yaml
 
+### 2.2 Seed KVM Create vms
 
 
 ###Note:
