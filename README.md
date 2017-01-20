@@ -71,30 +71,73 @@ To start the site build, after setting up of Jenkins slave and master setup.
 we can even perform manual deployment task wise.
 
 ### 2.1 Update Apollo
-Clone both aic-opssimple-sites and aic-opssimple-fullcd repos on jenkins vm
+In this Job we clone both aic-opssimple-sites and aic-opssimple-fullcd repos on jenkins vm
+and run a playbook to update the apollo code , move all yaml files to seed node and rename bootstrap_seed.yaml as site.yaml
+
 git clone -b $GERRIT_BRANCH ssh://jenkins@gerrit.mtn5.cci.att.com:29418/aic-opssimple-sites
 git clone -b $GERRIT_BRANCH ssh://jenkins@gerrit.mtn5.cci.att.com:29418/aic-opssimple-fullcd
 
 run the below playbook from jenkins VM
+~~~
 ansible-playbook -i inventory playbooks/seedkvm_updateapollo.yml --extra-vars="site_folder=$ENV_NAME" 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
-#### task 1: Update apollo code
-sudo apt-get update aic-opssimple-apollo && apt-get upgrade aic-opssimple-apollo
-#### task 2: Update the configuration files from Jenkins
-move all the following yamls files from jenkins vm to seed node
 ~~~
-           - bootstrap_fuelastute.yaml
-           - bootstrap_fuelplugins.yaml
-           - bootstrap_maasvm.yaml
-           - bootstrap_opscvm.yaml
-           - bootstrap_seed.yaml
-~~~
-#### task 3: Rename the bootstrap_seed.yaml to site.yaml
-on seed node run following command
-mv /home/ubuntu/apollo/bootstrap_seed.yaml /home/ubuntu/apollo/site.yaml
 
 ### 2.2 Seed KVM Create vms
 
+In this Job we run below playbook from jenkins VM to create fuel , opssimple and maas VMs on seed node and configure fuel VM .
+~~~
+ansible-playbook -i inventory/ playbooks/seedkvm_createvms.yml 
+~~~
+###2.3 Bootstrap KVMs
+In this Job we run a playbook from jenkins vm to bootrstrap all the operational KVMs
+~~~
+ansible-playbook -i inventory/ playbooks/seedkvm_startkvms.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
+### 2.4 Configure Opssimple
+In this Job we run below playboook from jenkins VM to configure opssimple VM  , import opssimple_sites.yaml file to the GUI and generate scripts.
 
+~~~
+ansible-playbook -i inventory/ playbooks/opscvm_updateopssimple.yml --extra-vars="site_folder=$ENV_NAME" 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
+###2.5 Deploy core LCP
+In this Job we run below playbook from jenkins vm to update KVMs , launch VMs for openstack env, assign all the roles, deploy openstack. 
+~~~
+ansible-playbook -i inventory/ playbooks/opscvm_deploycorelcp.yml 2>&1 | tee $WORKSPACE/$FILENAME  ; ( exit ${PIPESTATUS[0]} )
+~~~
+###2.6 Deploy additional Plugins
+In this Job we run ansible playbook from jenkins vm to deploy additional fuel plugins
+1.Launch LCM and TMDG VMs 
+2.Assign roles and deploy them in the opestack env
+~~~
+ansible-playbook -i inventory/ playbooks/opscvm_deployaddplugins.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
+### 2.7 Deploy compute
+In this Job we run a playbook from jenkins vm to deploy compute
+~~~
+ansible-playbook -i inventory/ playbooks/opscvm_deploycompute.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
+
+###2.8 deploy swift bare metal
+In this job we run a playbook from jenkins vm to deploy swift 
+~~~
+ansible-playbook -i inventory/ playbooks/opscvm_deployswift.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+
+~~~
+###2.9 Configure non-openstack
+In this job we Configure Non-openstack components
+~~~
+ansible-playbook -i inventory/ playbooks/opscvm_configurenonopenstack.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
+###2.10 LCM integration with non-openstack
+In thsi job we integrate LCM with non-openstack
+~~~
+ansible-playbook -i inventory/ playbooks/setup_foreman_plugin.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
+### 2.11 deployment validation
+in this Job we validate the deployment
+~~~
+ansible-playbook -i inventory/ playbooks/fuelvm_executetempest.yml 2>&1 | tee $WORKSPACE/$FILENAME ; ( exit ${PIPESTATUS[0]} )
+~~~
 ###Note:
 If Pipeline job fails, DE will need to re-run the FAILED Job after fixing the configuration if necessary and then continue executing individual downstream jobs only.
 
